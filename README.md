@@ -1,36 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Fundable Stellar Client
+
+Stellar client for the Fundable Protocol – a decentralized payment platform that enables seamless Web3 payments, streaming, and subscriptions. This client provides the user interface for interacting with Fundable's smart contracts deployed on the Stellar blockchain.
+
+## Features
+
+- 🌟 Native Stellar blockchain integration
+- 💸 Payment streaming and subscriptions
+- 🔐 Secure wallet connection (Freighter, etc.)
+- 📊 Dashboard for payment management
+- 💱 Offramp to fiat currencies
+- 🌐 Multi-asset support (XLM, USDC, etc.)
+
+## Tech Stack
+
+- **Framework:** Next.js 16 with App Router
+- **Language:** TypeScript 5.9
+- **Styling:** Tailwind CSS v4
+- **UI Components:** Shadcn/ui (new-york style)
+- **Package Manager:** pnpm
+- **Bundler:** Turbopack
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js v18 or higher
+- pnpm v8 or higher
+- Git
+
+### Installation
+
+1. Clone the repository:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone git@github.com:Fundable-Protocol/stellar_client.git
+cd stellar_client
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Install dependencies:
+```bash
+pnpm install
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. Create a `.env` file from the example:
+```bash
+cp .env.example .env
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Configure your environment variables in `.env`:
+```env
+NEXT_PUBLIC_URL=http://localhost:3000
+NEXT_PUBLIC_APP_NAME=Fundable Stellar
+NEXT_PUBLIC_API_URL=<your-backend-api-url>
+NEXT_PUBLIC_STELLAR_NETWORK=testnet
+NEXT_PUBLIC_STELLAR_RPC_URL=<stellar-rpc-url>
+NEXT_PUBLIC_STELLAR_HORIZON_URL=<horizon-url>
+```
 
-## Learn More
+5. Start the development server:
+```bash
+pnpm dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+The application will be available at `http://localhost:3000`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Available Scripts
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start development server with Turbopack |
+| `pnpm build` | Build production bundle |
+| `pnpm start` | Start production server |
+| `pnpm lint` | Run ESLint |
 
-## Deploy on Vercel
+## Project Structure
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+stellar_client/
+├── src/
+│   ├── app/           # Next.js App Router pages
+│   ├── components/    # React components
+│   │   ├── ui/        # Shadcn UI components
+│   │   └── modules/   # Feature-specific modules
+│   ├── hooks/         # Custom React hooks
+│   ├── lib/           # Utility functions
+│   ├── services/      # API service layer
+│   ├── types/         # TypeScript type definitions
+│   ├── providers/     # React context providers
+│   ├── store/         # State management
+│   ├── config/        # Configuration files
+│   ├── assets/        # Static assets (fonts, etc.)
+│   ├── middlewares/   # Custom middlewares
+│   ├── policies/      # Access control policies
+│   └── validations/   # Form validation schemas
+├── public/            # Public static assets
+└── ...config files
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Related Repositories
+
+- [backend-main](https://github.com/Fundable-Protocol/backend-main) - Backend API services
+- [evm_client](https://github.com/Fundable-Protocol/evm_client) - EVM-compatible client
+
+## Contributing
+
+We welcome contributions! Please feel free to submit a Pull Request.
+
+## License
+
+This project is part of the Fundable Protocol.
