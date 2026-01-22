@@ -11,6 +11,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: "pnpm"
 
       - name: Install pnpm
         uses: pnpm/action-setup@v3
@@ -18,15 +19,15 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        working-directory: apps
+        working-directory: ./apps/web
         run: pnpm install
 
       - name: Lint frontend
-        working-directory: apps
+        working-directory: ./apps/web
         run: pnpm lint
 
       - name: Build frontend
-        working-directory: apps
+        working-directory: ./apps/web
         run: pnpm build
 
   
