@@ -6,28 +6,28 @@ jobs:
   test: 
     runs-on: ubuntu-latest
 
-  steps: 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
+    steps: 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
         node-version: 20
         cache: "pnpm"
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v3
-      with:
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+        with:
         version: 9
 
-    - name: Install dependencies
-      working-directory: apps
-      run: pnpm install
+      - name: Install dependencies
+        working-directory: apps
+        run: pnpm install
 
-    - name: Lint frontend
-      working-directory: apps
-      run: pnpm lint
+      - name: Lint frontend
+        working-directory: apps
+        run: pnpm lint
 
-    - name: Build frontend
-      working-directory: apps
-      run: pnpm build
+      - name: Build frontend
+        working-directory: apps
+        run: pnpm build
 
   
