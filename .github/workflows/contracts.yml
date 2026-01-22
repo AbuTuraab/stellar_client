@@ -2,10 +2,8 @@ name: Contracts CI
 
 on: 
     [push or pull_request]:
-    paths:
-    - "contracts/**"
-    - "Cargo.toml"
-    - "Cargo.lock"
+    - 'contracts/**'
+    - '.github/workflows/contracts.yml'
 
 jobs:
     test_contracts: 
