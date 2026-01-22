@@ -1,7 +1,7 @@
 name: Contract Tests
 
 on:
-  pull_request:
+  [push or pull_request]:
     paths:
       - 'contracts/**'
       - '.github/workflows/contracts.yml'
