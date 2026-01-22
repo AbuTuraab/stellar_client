@@ -1,7 +1,7 @@
 name: Deploy to Testnet
 
 on:
-  [push or pull_request]:
+  merge:
     branches:
       - main
 
@@ -34,7 +34,7 @@ jobs:
 
       - name: Deploy to Stellar Testnet
         env:
-          SECRET_KEY: ${{ env.TESTNET_SECRET_KEY }}
-          RPC_URL: ${{ env.TESTNET_RPC_URL }}
+          SECRET_KEY: ${{ secrets.TESTNET_SECRET_KEY }}
+          RPC_URL: ${{ secrets.TESTNET_RPC_URL }}
         run: |
           echo "Deploying contracts to testnet..."
