@@ -1,9 +1,10 @@
 name: Contracts CI
 
 on: 
-  [push or pull_request]:
+  pull_request:
     paths:
       - 'contracts/**'
+      - '.github/workflows/contracts.yml'
 
 jobs:
   test: 
