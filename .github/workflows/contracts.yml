@@ -1,9 +1,6 @@
 name: Contracts CI
 
-on: 
-  [push, pull_request]
-    paths:
-      - 'contracts/**'
+on: [push, pull_request]
 
 jobs:
   test: 
