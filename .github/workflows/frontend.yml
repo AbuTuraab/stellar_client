@@ -23,15 +23,15 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        working-directory: apps
+        working-directory: apps/web
         run: pnpm install --frozen-lockfile
 
       - name: Lint frontend
-        working-directory: ./apps
+        working-directory: apps/web
         run: pnpm lint
 
       - name: Build frontend
-        working-directory: ./apps
+        working-directory: apps/web
         run: pnpm build
 
   
