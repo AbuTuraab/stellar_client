@@ -1,7 +1,7 @@
 name: Contracts CI
 
 on: 
-    pull_request:
+     [push or pull_request]
     paths:
     - "contracts/**"
     - "Cargo.toml"
