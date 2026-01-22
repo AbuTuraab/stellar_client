@@ -1,7 +1,7 @@
 name: Deploy to Testnet
 
 on:
-   [push or pull_request]
+  [push or pull_request]:
     branches:
       - main
 
