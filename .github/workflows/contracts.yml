@@ -2,37 +2,36 @@ name: Contracts CI
 
 on: 
   [push or pull_request]:
-    - 'contracts/**'
+    paths:
+      - 'contracts/**'
 
 jobs:
-    test_contracts: 
+  test: 
     runs-on: ubuntu-latest
 
-steps: 
-   - name: checkout repo
-     uses: actions/checkout@v4
+    steps: 
+      - name: checkout repo
+        uses: actions/checkout@v4
 
-   - name: Install Rust
-     uses: actions-rs/toolchain@v1
-
-     with:
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
           toolchain: stable
           override: true
 
-   - name: Install Stellar cli
-     uses: stellar/actions/soroban-cli@v1
+      - name: Install Stellar cli
+        uses: stellar/actions/soroban-cli@v1
 
-   - name: Cache Cargo 
-     uses: actions/cache@v4
-
-     with:
+      - name: Cache Cargo 
+        uses: actions/cache@v4
+        with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
             target
           key: cargo-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
-   - name: Run contract tests
-     working-directory: contracts
-     run: cargo test --all
+      - name: Run contract tests
+        working-directory: contracts
+        run: cargo test --all
 
