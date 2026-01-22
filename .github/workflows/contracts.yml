@@ -17,7 +17,7 @@ jobs:
           override: true
 
       - name: Install Stellar cli
-        uses: stellar/actions/soroban-cli@v1
+        uses: stellar/stellar-cli@v23.0.1
 
       - name: Cache Cargo 
         uses: actions/cache@v4
