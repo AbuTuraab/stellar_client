@@ -1,7 +1,7 @@
 name: Frontend CI
 
 on: 
-    [push or pull_request]:
+    [push, pull_request]:
     paths:
      - "apps/**"
 
