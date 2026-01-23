@@ -1,8 +1,8 @@
 #![no_std]
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype,
-    token::{self, Interface as _},
-    Address, Env, Symbol, Vec,
+    token, panic_with_error,
+    Address, Env, Symbol,
 };
 
 /// Stream status enum
@@ -64,7 +64,7 @@ impl PaymentStreamContract {
         admin.require_auth();
         env.storage().instance().set(&Symbol::new(&env, "admin"), &admin);
         env.storage().instance().set(&Symbol::new(&env, "stream_count"), &0u64);
-        env.storage().instance().bump(LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().instance().extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
     }
 
     /// Create a new payment stream
@@ -92,7 +92,7 @@ impl PaymentStreamContract {
         let stream_id = stream_count + 1;
         stream_count += 1;
         env.storage().instance().set(&Symbol::new(&env, "stream_count"), &stream_count);
-        env.storage().instance().bump(LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().instance().extend_ttl(LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Create stream
         let stream = Stream {
@@ -109,7 +109,7 @@ impl PaymentStreamContract {
 
         // Store stream and bump TTL
         env.storage().persistent().set(&stream_id, &stream);
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Transfer tokens from sender to contract (escrow)
         let token_client = token::Client::new(&env, &token);
@@ -124,7 +124,7 @@ impl PaymentStreamContract {
             return None;
         }
         // Bump TTL on read for safety
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
         env.storage().persistent().get(&stream_id)
     }
 
@@ -178,7 +178,7 @@ impl PaymentStreamContract {
         }
 
         env.storage().persistent().set(&stream_id, &stream);
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Transfer tokens to recipient
         let token_client = token::Client::new(&env, &stream.token);
@@ -208,7 +208,7 @@ impl PaymentStreamContract {
         stream.status = StreamStatus::Paused;
 
         env.storage().persistent().set(&stream_id, &stream);
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
     }
 
     /// Resume a paused stream (sender only)
@@ -225,7 +225,7 @@ impl PaymentStreamContract {
         stream.status = StreamStatus::Active;
 
         env.storage().persistent().set(&stream_id, &stream);
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
     }
 
     /// Cancel a stream (sender only)
@@ -242,7 +242,7 @@ impl PaymentStreamContract {
         stream.status = StreamStatus::Canceled;
 
         env.storage().persistent().set(&stream_id, &stream);
-        env.storage().persistent().bump(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
 
         // Refund remaining tokens to sender
         let remaining = stream.total_amount - stream.withdrawn_amount;
