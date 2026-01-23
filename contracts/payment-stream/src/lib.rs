@@ -273,7 +273,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -314,7 +314,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -351,7 +351,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -393,7 +393,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -435,7 +435,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -474,7 +474,7 @@ mod test {
 
         let admin = Address::generate(&env);
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         client.initialize(&admin);
@@ -494,7 +494,7 @@ mod test {
         let sac = env.register_stellar_asset_contract_v2(admin.clone());
         let token = sac.address();
 
-        let contract_id = env.register(PaymentStreamContract);
+        let contract_id = env.register(PaymentStreamContract, ());
         let client = PaymentStreamContractClient::new(&env, &contract_id);
 
         // Mock auth only for init and create
