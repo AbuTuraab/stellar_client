@@ -119,14 +119,13 @@ impl PaymentStreamContract {
     }
 
     /// Get stream details
-    pub fn get_stream(env: Env, stream_id: u64) -> Option<Stream> {
-        if !env.storage().persistent().has(&stream_id) {
-            return None;
-        }
-        // Extend TTL on read for safety
-        env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
-        env.storage().persistent().get(&stream_id)
-    }
+  pub fn get_stream(env: Env, stream_id: u64) -> Stream {
+    env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+
+    env.storage().persistent()
+        .get(&stream_id)
+        .unwrap_or_else(|| panic_with_error!(&env, Error::StreamNotFound))
+}
 
     /// Calculate withdrawable amount for a stream
     pub fn withdrawable_amount(env: Env, stream_id: u64) -> i128 {
