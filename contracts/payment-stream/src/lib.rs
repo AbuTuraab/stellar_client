@@ -17,7 +17,7 @@ pub enum StreamStatus {
 
 /// Stream data structure
 #[contracttype]
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Stream {
     pub id: u64,
     pub sender: Address,
@@ -119,20 +119,21 @@ impl PaymentStreamContract {
     }
 
     /// Get stream details
-  pub fn get_stream(env: Env, stream_id: u64) -> Stream {
-    env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
-
-    env.storage().persistent()
-        .get(&stream_id)
-        .unwrap_or_else(|| panic_with_error!(&env, Error::StreamNotFound))
+    pub fn get_stream(env: Env, stream_id: u64) -> Stream {
+    match env.storage().persistent().get(&stream_id) {
+        Some(stream) => {
+            env.storage().persistent().extend_ttl(&stream_id, LEDGER_THRESHOLD, LEDGER_BUMP);
+            stream
+        },
+        None => panic_with_error!(&env, Error::StreamNotFound),
+    }
 }
+
 
     /// Calculate withdrawable amount for a stream
     pub fn withdrawable_amount(env: Env, stream_id: u64) -> i128 {
-        let stream: Stream = match Self::get_stream(env.clone(), stream_id) {
-            Some(s) => s,
-            None => panic_with_error!(&env, Error::StreamNotFound),
-        };
+        let mut stream: Stream = Self::get_stream(env.clone(), stream_id);
+
 
         if stream.status != StreamStatus::Active {
             return 0;
@@ -158,10 +159,8 @@ impl PaymentStreamContract {
 
     /// Withdraw from a stream
     pub fn withdraw(env: Env, stream_id: u64, amount: i128) {
-        let mut stream: Stream = match Self::get_stream(env.clone(), stream_id) {
-            Some(s) => s,
-            None => panic_with_error!(&env, Error::StreamNotFound),
-        };
+        let mut stream: Stream = Self::get_stream(env.clone(), stream_id);
+
         stream.recipient.require_auth();
 
         let available = Self::withdrawable_amount(env.clone(), stream_id);
@@ -195,10 +194,8 @@ impl PaymentStreamContract {
 
     /// Pause a stream (sender only)
     pub fn pause_stream(env: Env, stream_id: u64) {
-        let mut stream: Stream = match Self::get_stream(env.clone(), stream_id) {
-            Some(s) => s,
-            None => panic_with_error!(&env, Error::StreamNotFound),
-        };
+      let mut stream: Stream = Self::get_stream(env.clone(), stream_id);
+
         stream.sender.require_auth();
 
         if stream.status != StreamStatus::Active {
@@ -212,10 +209,8 @@ impl PaymentStreamContract {
 
     /// Resume a paused stream (sender only)
     pub fn resume_stream(env: Env, stream_id: u64) {
-        let mut stream: Stream = match Self::get_stream(env.clone(), stream_id) {
-            Some(s) => s,
-            None => panic_with_error!(&env, Error::StreamNotFound),
-        };
+        let mut stream: Stream = Self::get_stream(env.clone(), stream_id);
+
         stream.sender.require_auth();
 
         if stream.status != StreamStatus::Paused {
@@ -229,10 +224,8 @@ impl PaymentStreamContract {
 
     /// Cancel a stream (sender only)
     pub fn cancel_stream(env: Env, stream_id: u64) {
-        let mut stream: Stream = match Self::get_stream(env.clone(), stream_id) {
-            Some(s) => s,
-            None => panic_with_error!(&env, Error::StreamNotFound),
-        };
+      let mut stream: Stream = Self::get_stream(env.clone(), stream_id);
+
         stream.sender.require_auth();
 
         if stream.status != StreamStatus::Active && stream.status != StreamStatus::Paused {
@@ -252,290 +245,4 @@ impl PaymentStreamContract {
     }
 }
 
-#[cfg(test)]
-mod test {
-    use super::*;
-    use soroban_sdk::{
-        testutils::{Address as _, Ledger, MockAuth, MockAuthInvoke},
-        IntoVal, token,
-    };
-
-    #[test]
-    fn test_create_stream() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        assert_eq!(stream_id, 1);
-
-        let stream = client.get_stream(&stream_id).unwrap();
-        assert_eq!(stream.total_amount, 1000);
-        assert_eq!(stream.status, StreamStatus::Active);
-
-        // Check contract balance
-        let token_client = token::Client::new(&env, &token);
-        assert_eq!(token_client.balance(&contract_id), 1000);
-    }
-
-    #[test]
-    fn test_withdrawable_amount() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        // Create stream: 1000 tokens over 100 seconds
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        // At time 50, should be able to withdraw 500
-        env.ledger().set_timestamp(50);
-        let available = client.withdrawable_amount(&stream_id);
-        assert_eq!(available, 500);
-    }
-
-    #[test]
-    fn test_withdraw() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        env.ledger().set_timestamp(50);
-
-        client.withdraw(&stream_id, &300);
-
-        let stream = client.get_stream(&stream_id).unwrap();
-        assert_eq!(stream.withdrawn_amount, 300);
-
-        let token_client = token::Client::new(&env, &token);
-        assert_eq!(token_client.balance(&recipient), 300);
-        assert_eq!(token_client.balance(&contract_id), 700);
-    }
-
-    #[test]
-    fn test_withdraw_max() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        env.ledger().set_timestamp(50);
-
-        client.withdraw_max(&stream_id);
-
-        let stream = client.get_stream(&stream_id).unwrap();
-        assert_eq!(stream.withdrawn_amount, 500);
-
-        let token_client = token::Client::new(&env, &token);
-        assert_eq!(token_client.balance(&recipient), 500);
-        assert_eq!(token_client.balance(&contract_id), 500);
-    }
-
-    #[test]
-    fn test_cancel_stream() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        env.ledger().set_timestamp(50);
-        client.withdraw(&stream_id, &500);
-
-        client.cancel_stream(&stream_id);
-
-        let stream = client.get_stream(&stream_id).unwrap();
-        assert_eq!(stream.status, StreamStatus::Canceled);
-
-        let token_client = token::Client::new(&env, &token);
-        assert_eq!(token_client.balance(&sender), 500); // Remaining refunded
-        assert_eq!(token_client.balance(&contract_id), 0);
-    }
-
-    #[test]
-    #[should_panic(expected = "StreamNotFound")]
-    fn test_get_nonexistent_stream() {
-        let env = Env::default();
-        env.mock_all_auths();
-
-        let admin = Address::generate(&env);
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        client.initialize(&admin);
-
-        client.get_stream(&999); // Should panic
-    }
-
-    #[test]
-    #[should_panic(expected = "Unauthorized")]
-    fn test_unauthorized_withdraw() {
-        let env = Env::default();
-
-        let admin = Address::generate(&env);
-        let sender = Address::generate(&env);
-        let recipient = Address::generate(&env);
-
-        let sac = env.register_stellar_asset_contract_v2(admin.clone());
-        let token = sac.address();
-
-        let contract_id = env.register(PaymentStreamContract, ());
-        let client = PaymentStreamContractClient::new(&env, &contract_id);
-
-        // Mock auth only for init and create
-        env.mock_auths(&[
-            MockAuth {
-                address: &admin,
-                invoke: &MockAuthInvoke {
-                    contract: &contract_id,
-                    fn_name: "initialize",
-                    args: (&admin,).into_val(&env),
-                    sub_invokes: &[],
-                },
-            },
-            MockAuth {
-                address: &sender,
-                invoke: &MockAuthInvoke {
-                    contract: &contract_id,
-                    fn_name: "create_stream",
-                    args: (&sender, &recipient, &token, 1000i128, 0u64, 100u64).into_val(&env),
-                    sub_invokes: &[],
-                },
-            },
-        ]);
-
-        client.initialize(&admin);
-
-        // Mint tokens to sender
-        let token_admin = token::StellarAssetClient::new(&env, &token);
-        token_admin.mint(&sender, &1000);
-
-        let stream_id = client.create_stream(
-            &sender,
-            &recipient,
-            &token,
-            &1000,
-            &0,
-            &100,
-        );
-
-        env.ledger().set_timestamp(50);
-
-        // No auth for withdraw → should panic on require_auth
-        client.withdraw(&stream_id, &300);
-    }
-}
+mod test;
