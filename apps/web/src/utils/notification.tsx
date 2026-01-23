@@ -16,7 +16,7 @@ export const notify = {
       <div className="flex flex-col gap-1">
         <span className="font-semibold">{message}</span>
         <a
-          href={`${EXPLORER_URL}${txHash}`}
+          href={`${EXPLORER_URL}${encodeURIComponent(txHash)}`}
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-1 text-xs text-violet-400 hover:text-violet-300 transition-colors"
