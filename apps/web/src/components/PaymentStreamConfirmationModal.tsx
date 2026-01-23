@@ -38,15 +38,15 @@ export function PaymentStreamConfirmationModal({
         </DialogHeader>
         
         <div className="space-y-4">
-          <p className="text-gray-600">
+          <p className="text-zinc-400">
             Please review the payment stream details before confirming the transaction.
           </p>
           
           <PaymentStreamSummary data={data} />
           
-          <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <h4 className="font-medium text-yellow-800 mb-2">Important Notes:</h4>
-            <ul className="text-sm text-yellow-700 space-y-1">
+          <div className="p-4 bg-yellow-900/20 border border-yellow-800 rounded-lg">
+            <h4 className="font-medium text-yellow-400 mb-2">Important Notes:</h4>
+            <ul className="text-sm text-yellow-300 space-y-1">
               <li>• This transaction will be submitted to the Stellar network</li>
               <li>• The total amount will be locked in the smart contract</li>
               <li>• The recipient can withdraw tokens as they vest over time</li>

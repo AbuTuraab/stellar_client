@@ -69,11 +69,11 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
             placeholder="GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
             {...register("recipientAddress")}
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-zinc-400">
             Example: GCKFBEIYTKP5RDBQMTVVALONAOPBXICYQPGJGQONRRGZRWCXJWW2BVN7
           </p>
           {errors.recipientAddress && (
-            <p className="text-sm text-red-600">{errors.recipientAddress.message}</p>
+            <p className="text-sm text-red-400">{errors.recipientAddress.message}</p>
           )}
         </div>
 
@@ -91,7 +91,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
             ))}
           </Select>
           {errors.token && (
-            <p className="text-sm text-red-600">{errors.token.message}</p>
+            <p className="text-sm text-red-400">{errors.token.message}</p>
           )}
         </div>
 
@@ -105,7 +105,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
             {...register("totalAmount")}
           />
           {errors.totalAmount && (
-            <p className="text-sm text-red-600">{errors.totalAmount.message}</p>
+            <p className="text-sm text-red-400">{errors.totalAmount.message}</p>
           )}
         </div>
 
@@ -120,7 +120,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
               {...register("duration")}
             />
             {errors.duration && (
-              <p className="text-sm text-red-600">{errors.duration.message}</p>
+              <p className="text-sm text-red-400">{errors.duration.message}</p>
             )}
           </div>
           <div className="space-y-2">
@@ -133,7 +133,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
               <option value="days">Days</option>
             </Select>
             {errors.durationUnit && (
-              <p className="text-sm text-red-600">{errors.durationUnit.message}</p>
+              <p className="text-sm text-red-400">{errors.durationUnit.message}</p>
             )}
           </div>
         </div>
@@ -142,7 +142,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="cancelable">Cancelable</Label>
-              <p className="text-sm text-gray-600">Allow sender to cancel the stream</p>
+              <p className="text-sm text-zinc-400">Allow sender to cancel the stream</p>
             </div>
             <Switch
               id="cancelable"
@@ -154,7 +154,7 @@ export function PaymentStreamForm({ onSuccess, onError }: PaymentStreamFormProps
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="transferable">Transferable</Label>
-              <p className="text-sm text-gray-600">Allow recipient to transfer the stream</p>
+              <p className="text-sm text-zinc-400">Allow recipient to transfer the stream</p>
             </div>
             <Switch
               id="transferable"
