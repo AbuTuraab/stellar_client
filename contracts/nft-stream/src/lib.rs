@@ -317,11 +317,7 @@ impl PaymentStreamContract {
 
         stream.sender.require_auth();
 
-        let ownership_id: u64 = env
-            .storage()
-            .persistent()
-            .get(&DataKey::OwnershipToStream(stream_id))
-            .ok_or(Error::OwnershipRecordNotFound)?;
+        let ownership_id: u64 = stream.ownership_id;
         let ownership_record: StreamOwnershipRecord = env
             .storage()
             .persistent()
