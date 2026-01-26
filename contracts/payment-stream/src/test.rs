@@ -376,7 +376,20 @@ fn test_set_delegate() {
 
     // Check delegate is set
     let retrieved_delegate = client.get_delegate(&stream_id);
-    assert_eq!(retrieved_delegate, Some(delegate));
+    assert_eq!(retrieved_delegate, Some(delegate.clone()));
+
+    // Check event
+    let events = env.events().all();
+    assert_eq!(events.len(), 2); // create_stream also emits? Wait, no, create_stream doesn't emit events.
+    // Actually, create_stream doesn't emit, only withdraw does for fees, but here no withdraw.
+    // So, only one event.
+    assert_eq!(events.len(), 1);
+    let event = &events[0];
+    assert_eq!(event.0, ("DelegationGranted", stream_id));
+    let data: crate::DelegationGrantedEvent = event.1.clone().into_val(&env);
+    assert_eq!(data.stream_id, stream_id);
+    assert_eq!(data.recipient, recipient);
+    assert_eq!(data.delegate, delegate);
 }
 
 #[test]
@@ -470,6 +483,150 @@ fn test_revoke_delegate() {
     // Check delegate is removed
     let retrieved_delegate = client.get_delegate(&stream_id);
     assert_eq!(retrieved_delegate, None);
+
+    // Check event
+    let events = env.events().all();
+    assert_eq!(events.len(), 2); // set and revoke
+    let revoke_event = &events[1];
+    assert_eq!(revoke_event.0, ("DelegationRevoked", stream_id));
+    let data: crate::DelegationRevokedEvent = revoke_event.1.clone().into_val(&env);
+    assert_eq!(data.stream_id, stream_id);
+    assert_eq!(data.recipient, recipient);
+}
+
+#[test]
+#[should_panic(expected = "InvalidDelegate")]
+fn test_set_zero_delegate() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fee_collector = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let zero_delegate = Address::from_contract_id(&env, &Bytes::from_slice(&env, &[0u8; 32]));
+
+    let sac = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = sac.address();
+
+    let contract_id = env.register(PaymentStreamContract, ());
+    let client = PaymentStreamContractClient::new(&env, &contract_id);
+
+    client.initialize(&admin, &fee_collector, &0);
+
+    let token_admin = token::StellarAssetClient::new(&env, &token);
+    token_admin.mint(&sender, &1000);
+
+    let stream_id = client.create_stream(
+        &sender,
+        &recipient,
+        &token,
+        &1000,
+        &0,
+        &100,
+    );
+
+    // Attempt to set zero delegate
+    client.set_delegate(&stream_id, &zero_delegate);
+}
+
+#[test]
+fn test_overwrite_delegate() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fee_collector = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let recipient = Address::generate(&env);
+    let delegate1 = Address::generate(&env);
+    let delegate2 = Address::generate(&env);
+
+    let sac = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = sac.address();
+
+    let contract_id = env.register(PaymentStreamContract, ());
+    let client = PaymentStreamContractClient::new(&env, &contract_id);
+
+    client.initialize(&admin, &fee_collector, &0);
+
+    let token_admin = token::StellarAssetClient::new(&env, &token);
+    token_admin.mint(&sender, &1000);
+
+    let stream_id = client.create_stream(
+        &sender,
+        &recipient,
+        &token,
+        &1000,
+        &0,
+        &100,
+    );
+
+    // Set first delegate
+    client.set_delegate(&stream_id, &delegate1);
+    assert_eq!(client.get_delegate(&stream_id), Some(delegate1.clone()));
+
+    // Overwrite with second delegate
+    client.set_delegate(&stream_id, &delegate2);
+    assert_eq!(client.get_delegate(&stream_id), Some(delegate2.clone()));
+
+    // Check events
+    let events = env.events().all();
+    assert_eq!(events.len(), 2);
+    // First set
+    let event1 = &events[0];
+    assert_eq!(event1.0, ("DelegationGranted", stream_id));
+    let data1: crate::DelegationGrantedEvent = event1.1.clone().into_val(&env);
+    assert_eq!(data1.delegate, delegate1);
+    // Second set
+    let event2 = &events[1];
+    assert_eq!(event2.0, ("DelegationGranted", stream_id));
+    let data2: crate::DelegationGrantedEvent = event2.1.clone().into_val(&env);
+    assert_eq!(data2.delegate, delegate2);
+}
+
+#[test]
+fn test_revoke_nonexistent_delegate() {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let fee_collector = Address::generate(&env);
+    let sender = Address::generate(&env);
+    let recipient = Address::generate(&env);
+
+    let sac = env.register_stellar_asset_contract_v2(admin.clone());
+    let token = sac.address();
+
+    let contract_id = env.register(PaymentStreamContract, ());
+    let client = PaymentStreamContractClient::new(&env, &contract_id);
+
+    client.initialize(&admin, &fee_collector, &0);
+
+    let token_admin = token::StellarAssetClient::new(&env, &token);
+    token_admin.mint(&sender, &1000);
+
+    let stream_id = client.create_stream(
+        &sender,
+        &recipient,
+        &token,
+        &1000,
+        &0,
+        &100,
+    );
+
+    // Revoke without setting delegate
+    client.revoke_delegate(&stream_id);
+    assert_eq!(client.get_delegate(&stream_id), None);
+
+    // Check event
+    let events = env.events().all();
+    assert_eq!(events.len(), 1);
+    let event = &events[0];
+    assert_eq!(event.0, ("DelegationRevoked", stream_id));
+    let data: crate::DelegationRevokedEvent = event.1.clone().into_val(&env);
+    assert_eq!(data.stream_id, stream_id);
+    assert_eq!(data.recipient, recipient);
 }
 
 #[test]

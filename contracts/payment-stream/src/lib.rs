@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, panic_with_error, token, Address, Env, Symbol};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, panic_with_error, token, Address, Bytes, Env, Symbol};
 
 /// Stream status enum
 #[contracttype]
@@ -69,6 +69,7 @@ pub enum Error {
     TransferFailed = 11,
     FeeTooHigh = 12,
     InvalidRecipient = 13,
+    InvalidDelegate = 14,
 }
 
 // consts defined above
@@ -182,11 +183,17 @@ impl PaymentStreamContract {
     pub fn set_delegate(env: Env, stream_id: u64, delegate: Address) {
         let stream: Stream = Self::get_stream(env.clone(), stream_id);
         stream.recipient.require_auth();
-
+    
+        // Validate delegate address
+        let zero_address = Address::from_contract_id(&env, &Bytes::from_slice(&env, &[0u8; 32]));
+        if delegate == zero_address {
+            panic_with_error!(&env, Error::InvalidDelegate);
+        }
+    
         // Store delegate
         env.storage().persistent().set(&(stream_id, Symbol::new(&env, "delegate")), &delegate);
         env.storage().persistent().extend_ttl(&(stream_id, Symbol::new(&env, "delegate")), LEDGER_THRESHOLD, LEDGER_BUMP);
-
+    
         // Emit event
         let event = DelegationGrantedEvent {
             stream_id,
