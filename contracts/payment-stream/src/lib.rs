@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contract, contracterror, contractimpl, contracttype, panic_with_error, token, Address, Bytes, Env, Symbol};
+use soroban_sdk::{contract, contracterror, contractimpl, contracttype, panic_with_error, token, Address, Env, Symbol};
 
 /// Stream status enum
 #[contracttype]
@@ -80,7 +80,7 @@ pub enum Error {
     InvalidRecipient = 13,
     DepositExceedsTotal = 14,
     ArithmeticOverflow = 15,
-    InvalidDelegate = 14,
+    InvalidDelegate = 16,
 }
 
 // consts defined above
@@ -214,21 +214,20 @@ impl PaymentStreamContract {
         }
     }
 
-    /// Assert that the caller is the stream recipient or their delegate
+    /// Assert that the caller is authorized to withdraw (recipient or delegate).
     fn assert_is_recipient_or_delegate(env: &Env, stream_id: u64) {
-        let caller = env.invoker();
         let stream: Stream = Self::get_stream(env.clone(), stream_id);
-        if caller == stream.recipient {
+        
+        // First, check if a delegate is set and try to require auth from them
+        let delegate_opt: Option<Address> = env.storage().persistent().get(&(stream_id, Symbol::new(env, "delegate")));
+        
+        if let Some(delegate) = delegate_opt {
+            // If delegate exists, require auth from delegate (they're the one calling)
+            delegate.require_auth();
+        } else {
+            // No delegate, require auth from recipient
             stream.recipient.require_auth();
-            return;
         }
-        if let Some(delegate) = env.storage().persistent().get(&(stream_id, Symbol::new(env, "delegate"))) {
-            if caller == delegate {
-                delegate.require_auth();
-                return;
-            }
-        }
-        panic_with_error!(env, Error::Unauthorized);
     }
 
     /// Set a delegate for withdrawal rights on a stream
@@ -236,10 +235,21 @@ impl PaymentStreamContract {
         let stream: Stream = Self::get_stream(env.clone(), stream_id);
         stream.recipient.require_auth();
     
-        // Validate delegate address
-        let zero_address = Address::from_contract_id(&env, &Bytes::from_slice(&env, &[0u8; 32]));
-        if delegate == zero_address {
+        // Prevent self-delegation
+        if delegate == stream.recipient {
             panic_with_error!(&env, Error::InvalidDelegate);
+        }
+
+        // Check if there's an existing delegate and emit revocation event
+        let delegate_key = (stream_id, Symbol::new(&env, "delegate"));
+        if let Some(old_delegate) = env.storage().persistent().get::<_, Address>(&delegate_key) {
+            if old_delegate != delegate {
+                let revoke_event = DelegationRevokedEvent {
+                    stream_id,
+                    recipient: stream.recipient.clone(),
+                };
+                env.events().publish(("DelegationRevoked", stream_id), revoke_event);
+            }
         }
     
         // Store delegate
@@ -260,15 +270,20 @@ impl PaymentStreamContract {
         let stream: Stream = Self::get_stream(env.clone(), stream_id);
         stream.recipient.require_auth();
 
-        // Remove delegate
-        env.storage().persistent().remove(&(stream_id, Symbol::new(&env, "delegate")));
+        let delegate_key = (stream_id, Symbol::new(&env, "delegate"));
+        let had_delegate = env.storage().persistent().has(&delegate_key);
 
-        // Emit event
-        let event = DelegationRevokedEvent {
-            stream_id,
-            recipient: stream.recipient,
-        };
-        env.events().publish(("DelegationRevoked", stream_id), event);
+        // Remove delegate
+        env.storage().persistent().remove(&delegate_key);
+
+        // Only emit event if delegate was actually set
+        if had_delegate {
+            let event = DelegationRevokedEvent {
+                stream_id,
+                recipient: stream.recipient,
+            };
+            env.events().publish(("DelegationRevoked", stream_id), event);
+        }
     }
 
     /// Get the delegate for a stream
