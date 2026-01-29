@@ -96,6 +96,10 @@ export function TokenBalanceList({ className = "" }: TokenBalanceListProps) {
       return;
     }
 
+    // Cancellation flag - set to true when effect cleanup runs
+    // This prevents race conditions where stale responses overwrite newer state
+    let cancelled = false;
+
     // Fetch balances
     const fetchBalances = async () => {
       setLoading(true);
@@ -133,8 +137,10 @@ export function TokenBalanceList({ className = "" }: TokenBalanceListProps) {
         // Sort balances with XLM first, then alphabetically
         const sortedBalances = sortTokenBalances(extractedBalances);
 
-        // Update state with sorted balances
-        setBalances(sortedBalances);
+        // Only update state if this request hasn't been cancelled (Requirement 2.3)
+        if (!cancelled) {
+          setBalances(sortedBalances);
+        }
       } catch (err) {
         // Log detailed error information for debugging (Requirement 9.4)
         console.error("Failed to fetch token balances:", {
@@ -151,13 +157,26 @@ export function TokenBalanceList({ className = "" }: TokenBalanceListProps) {
           err instanceof Error
             ? err
             : new Error(String(err || "Unknown error"));
-        setError(error);
+
+        // Only update error state if this request hasn't been cancelled (Requirement 2.3)
+        if (!cancelled) {
+          setError(error);
+        }
       } finally {
-        setLoading(false);
+        // Only update loading state if this request hasn't been cancelled (Requirement 2.3)
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
     fetchBalances();
+
+    // Cleanup function - mark this request as cancelled (Requirement 2.5)
+    // This runs when dependencies change or component unmounts
+    return () => {
+      cancelled = true;
+    };
   }, [address, isConnected, network]);
 
   // Render: No wallet connected
@@ -241,14 +260,23 @@ export function TokenBalanceList({ className = "" }: TokenBalanceListProps) {
 
           {/* Show helpful action for Account Not Found */}
           {error instanceof AccountNotFoundError && (
-            <a
-              href="https://laboratory.stellar.org/#account-creator?network=test"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center px-4 py-2 mt-2 text-sm font-medium text-zinc-900 bg-violet-400 rounded-lg hover:bg-violet-500 transition-colors"
-            >
-              Fund Account on Testnet
-            </a>
+            <>
+              {network === WalletNetwork.TESTNET ? (
+                <a
+                  href="https://laboratory.stellar.org/#account-creator?network=test"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center px-4 py-2 mt-2 text-sm font-medium text-zinc-900 bg-violet-400 rounded-lg hover:bg-violet-500 transition-colors"
+                >
+                  Fund Account on Testnet
+                </a>
+              ) : (
+                <p className="text-zinc-500 text-sm mt-2">
+                  To activate this account, send at least 1 XLM to it from
+                  another account.
+                </p>
+              )}
+            </>
           )}
         </div>
       </div>

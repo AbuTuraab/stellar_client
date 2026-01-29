@@ -178,4 +178,71 @@ describe("extractBalances", () => {
     expect(result[0].balance).toBe("0.0000001");
     expect(result[1].balance).toBe("999999999.9999999");
   });
+
+  it("should filter out liquidity pool shares and other non-displayable asset types", () => {
+    const accountInfo: AccountInfo = {
+      accountId: "GTEST123",
+      sequence: "123456",
+      balances: [
+        {
+          balance: "100.5000000",
+          assetType: "native",
+        },
+        {
+          balance: "50.2500000",
+          assetType: "credit_alphanum4",
+          assetCode: "USDC",
+          assetIssuer:
+            "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        },
+        {
+          balance: "25.0000000",
+          assetType: "liquidity_pool_shares" as any,
+          // liquidity_pool_shares don't have assetCode
+        },
+      ],
+    };
+
+    const result = extractBalances(accountInfo);
+
+    // Should only include native XLM and USDC, not liquidity pool shares
+    expect(result).toHaveLength(2);
+    expect(result[0].assetCode).toBe("XLM");
+    expect(result[1].assetCode).toBe("USDC");
+    // Verify liquidity pool shares are not in results
+    expect(result.find((b) => b.balance === "25.0000000")).toBeUndefined();
+  });
+
+  it("should not mislabel non-native assets as XLM", () => {
+    const accountInfo: AccountInfo = {
+      accountId: "GTEST123",
+      sequence: "123456",
+      balances: [
+        {
+          balance: "100.5000000",
+          assetType: "native",
+        },
+        {
+          balance: "50.2500000",
+          assetType: "credit_alphanum4",
+          assetCode: "USDC",
+          assetIssuer:
+            "GA5ZSEJYB37JRC5AVCIA5MOP4RHTM335X2KGX3IHOJAPP5RE34K4KZVN",
+        },
+        {
+          balance: "25.0000000",
+          assetType: "liquidity_pool_shares" as any,
+          // This should be filtered out, not labeled as XLM
+        },
+      ],
+    };
+
+    const result = extractBalances(accountInfo);
+
+    // Only one XLM entry should exist (the native one)
+    const xlmBalances = result.filter((b) => b.assetCode === "XLM");
+    expect(xlmBalances).toHaveLength(1);
+    expect(xlmBalances[0].balance).toBe("100.5000000");
+    expect(xlmBalances[0].assetIssuer).toBeUndefined();
+  });
 });

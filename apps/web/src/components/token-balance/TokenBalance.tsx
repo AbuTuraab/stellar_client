@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { TokenBalanceProps } from "@/types/token-balance.types";
 import { formatBalance } from "@/utils/format-balance";
@@ -69,6 +69,12 @@ export function TokenBalance({
 }: TokenBalanceProps) {
   const [imageError, setImageError] = useState(false);
   const formattedBalance = formatBalance(balance);
+
+  // Reset error state when icon URL or asset code changes
+  // This allows the component to attempt loading the new icon
+  useEffect(() => {
+    setImageError(false);
+  }, [iconUrl, assetCode]);
 
   return (
     <div className="flex items-center gap-4 p-4 bg-zinc-800 rounded-lg border border-zinc-700 hover:border-zinc-600 transition-colors">

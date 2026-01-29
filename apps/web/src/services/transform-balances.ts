@@ -38,22 +38,35 @@ import { getTokenIconUrl } from "../utils/get-token-icon-url";
  * **Validates: Requirements 1.2, 1.4**
  */
 export function extractBalances(accountInfo: AccountInfo): TokenBalanceData[] {
-  return accountInfo.balances.map((balance) => {
-    // Determine asset code
-    // For native XLM, assetCode is undefined in the API response, so we use "XLM"
-    const assetCode = balance.assetCode || "XLM";
+  return accountInfo.balances
+    .map((balance) => {
+      // Determine asset code based on asset type
+      let assetCode: string | undefined;
 
-    // Asset issuer is undefined for native XLM
-    const assetIssuer = balance.assetIssuer;
+      if (balance.assetType === "native") {
+        // Native XLM
+        assetCode = "XLM";
+      } else {
+        // Custom tokens - use the asset_code from the balance
+        assetCode = balance.assetCode;
+      }
 
-    // Construct icon URL using the utility function
-    const iconUrl = getTokenIconUrl(assetCode, assetIssuer);
+      // Asset issuer is undefined for native XLM
+      const assetIssuer = balance.assetIssuer;
 
-    return {
-      assetCode,
-      assetIssuer,
-      balance: balance.balance,
-      iconUrl,
-    };
-  });
+      // Construct icon URL using the utility function
+      const iconUrl = assetCode ? getTokenIconUrl(assetCode, assetIssuer) : "";
+
+      return {
+        assetCode,
+        assetIssuer,
+        balance: balance.balance,
+        iconUrl,
+      };
+    })
+    .filter((balance): balance is TokenBalanceData => {
+      // Filter out entries with undefined assetCode
+      // This removes liquidity_pool_shares and other non-displayable types
+      return balance.assetCode !== undefined;
+    });
 }
