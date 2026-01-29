@@ -243,6 +243,7 @@ export const StreamsHistory = () => {
                                 page={streamsData?.meta.currentPage}
                                 limit={streamsData?.meta.perPage}
                                 totalCount={streamsData?.meta.totalRows}
+                                columns={columnsWithActions}
                             />
                         </TabsContent>
                     </>

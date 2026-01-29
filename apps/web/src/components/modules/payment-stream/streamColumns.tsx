@@ -66,10 +66,12 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
                 </div>
             );
         },
+        sortingFn: "alphanumeric", // Simple way to handle decimal strings
     },
     {
         id: "progress",
         header: () => <div className="text-center">Progress</div>,
+        enableSorting: false,
         cell: ({ row }) => {
             const stream = row.original;
             const now = Date.now();

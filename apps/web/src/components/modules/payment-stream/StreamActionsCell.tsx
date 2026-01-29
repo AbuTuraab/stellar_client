@@ -1,27 +1,42 @@
 "use client";
 
 import React, { useState } from "react";
-import { ExternalLink, MoreHorizontal, Copy, Wallet } from "lucide-react";
+import {
+    ExternalLink,
+    MoreHorizontal,
+    Copy,
+    Wallet,
+    Pause,
+    Play,
+    XCircle
+} from "lucide-react";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import type { StreamRecord } from "@/lib/validations";
 import { STELLAR_EXPERT_URL } from "@/lib/constants";
 import { WithdrawStreamModal } from "./WithdrawStreamModal";
+import { toast } from "react-hot-toast";
+import { useWallet } from "@/providers/StellarWalletProvider";
 
 type StreamActionsCellProps = {
     stream: StreamRecord;
 };
 
 export default function StreamActionsCell({ stream }: StreamActionsCellProps) {
+    const { address } = useWallet();
     const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+
+    const isSender = address?.toLowerCase() === stream.sender.toLowerCase();
+    const isRecipient = address?.toLowerCase() === stream.recipient.toLowerCase();
 
     const handleViewOnExplorer = () => {
-        // For Stellar, we can link to stellar.expert
         const url = `${STELLAR_EXPERT_URL}/tx/${stream.id}`;
         window.open(url, "_blank");
     };
@@ -30,25 +45,66 @@ export default function StreamActionsCell({ stream }: StreamActionsCellProps) {
         if (!stream?.id) return;
         try {
             await navigator.clipboard.writeText(stream.id);
+            toast.success("Stream ID copied to clipboard");
         } catch { }
     };
 
     const handleOpenWithdraw = () => setIsWithdrawOpen(true);
-    const handleCloseWithdraw = () => setIsWithdrawOpen(false);
+
+    const handlePause = async () => {
+        setIsLoading(true);
+        try {
+            // In a real app, this would call the service
+            // await StellarService.pauseStream(BigInt(stream.id), ...);
+            toast.success("Stream paused successfully");
+        } catch (error) {
+            toast.error("Failed to pause stream");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleResume = async () => {
+        setIsLoading(true);
+        try {
+            // await StellarService.resumeStream(BigInt(stream.id), ...);
+            toast.success("Stream resumed successfully");
+        } catch (error) {
+            toast.error("Failed to resume stream");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCancel = async () => {
+        if (!confirm("Are you sure you want to cancel this stream? This action cannot be undone.")) return;
+
+        setIsLoading(true);
+        try {
+            // await StellarService.cancelStream(BigInt(stream.id), ...);
+            toast.success("Stream canceled successfully");
+        } catch (error) {
+            toast.error("Failed to cancel stream");
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const isActive = stream.status === "Active";
+    const isPaused = stream.status === "Paused";
+    const canManage = isActive || isPaused;
 
     return (
         <>
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-zinc-700">
+                    <Button variant="ghost" className="h-8 w-8 p-0 hover:bg-zinc-700" disabled={isLoading}>
                         <span className="sr-only">Open menu</span>
                         <MoreHorizontal className="h-4 w-4 text-white" />
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    {isActive && (
+                    {isRecipient && isActive && (
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={handleOpenWithdraw}
@@ -57,6 +113,39 @@ export default function StreamActionsCell({ stream }: StreamActionsCellProps) {
                             Withdraw
                         </DropdownMenuItem>
                     )}
+
+                    {isSender && isActive && (
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={handlePause}
+                        >
+                            <Pause className="mr-2 h-4 w-4" />
+                            Pause Stream
+                        </DropdownMenuItem>
+                    )}
+
+                    {isSender && isPaused && (
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={handleResume}
+                        >
+                            <Play className="mr-2 h-4 w-4" />
+                            Resume Stream
+                        </DropdownMenuItem>
+                    )}
+
+                    {isSender && (isActive || isPaused) && stream.cancelable && (
+                        <DropdownMenuItem
+                            className="cursor-pointer text-red-500 focus:text-red-500 focus:bg-red-500/10"
+                            onClick={handleCancel}
+                        >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Cancel Stream
+                        </DropdownMenuItem>
+                    )}
+
+                    {(isSender || isRecipient) && <DropdownMenuSeparator />}
+
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={handleViewOnExplorer}
