@@ -9,18 +9,24 @@ interface StreamCountdownProps {
 
 const StreamCountdown: React.FC<StreamCountdownProps> = ({ endTime, status }) => {
     const [currentTime, setCurrentTime] = useState(Date.now());
+    const normalizedStatus = status.toLowerCase();
 
     useEffect(() => {
-        if (status.toLowerCase() !== "active") return;
+        if (normalizedStatus !== "active") {
+            setCurrentTime(Date.now());
+            return;
+        }
 
         const interval = setInterval(() => {
             setCurrentTime(Date.now());
         }, 1000);
 
         return () => clearInterval(interval);
-    }, [status]);
+    }, [normalizedStatus]);
 
     const timeLeft = useMemo(() => {
+        if (normalizedStatus !== "active") return null;
+
         const diff = endTime - currentTime;
         if (diff <= 0) return null;
 
@@ -35,7 +41,14 @@ const StreamCountdown: React.FC<StreamCountdownProps> = ({ endTime, status }) =>
             minutes,
             seconds,
         };
-    }, [currentTime, endTime]);
+    }, [currentTime, endTime, normalizedStatus]);
+
+    if (normalizedStatus !== "active") {
+        const label = normalizedStatus === "completed"
+            ? "Completed"
+            : normalizedStatus.charAt(0).toUpperCase() + normalizedStatus.slice(1);
+        return <span className="text-zinc-500 font-mono text-xs">{label}</span>;
+    }
 
     if (!timeLeft) {
         return <span className="text-zinc-500 font-mono text-xs">Completed</span>;

@@ -72,6 +72,8 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
         header: () => <div className="text-center">Progress</div>,
         cell: ({ row }) => {
             const stream = row.original;
+            const now = Date.now();
+            const effectiveStatus = now > stream.endTime ? "completed" : stream.status;
             return (
                 <div className="min-w-[150px]">
                     <StreamProgressBar
@@ -79,7 +81,7 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
                         endTime={stream.endTime}
                         totalAmount={stream.totalAmount}
                         withdrawnAmount={stream.withdrawnAmount}
-                        status={stream.status}
+                        status={effectiveStatus}
                         tokenSymbol={stream.tokenSymbol}
                     />
                 </div>
@@ -103,11 +105,13 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
         cell: ({ row }) => {
             const endTime = row.getValue("endTime") as number;
             const status = row.original.status;
+            const now = Date.now();
+            const effectiveStatus = now > endTime ? "completed" : status;
             const formattedDate = format(new Date(endTime), "MMM dd, yyyy HH:mm");
             return (
                 <div className="flex flex-col items-center space-y-1">
                     <div className="text-white font-mono text-center text-xs">{formattedDate}</div>
-                    <StreamCountdown endTime={endTime} status={status} />
+                    <StreamCountdown endTime={endTime} status={effectiveStatus} />
                 </div>
             );
         },
