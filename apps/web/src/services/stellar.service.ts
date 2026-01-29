@@ -22,6 +22,7 @@ import {
   Address,
   nativeToScVal,
   scValToNative,
+  Account,
 } from '@stellar/stellar-sdk';
 import { Server as RpcServer, Api } from '@stellar/stellar-sdk/rpc';
 import { Horizon } from '@stellar/stellar-sdk';
@@ -246,7 +247,7 @@ export class StellarService {
         [nativeToScVal(streamId, { type: 'u64' })]
       );
 
-      return result ? this.parseStreamResult(result) : null;
+      return result ? this.parseStreamResult(result as unknown as Record<string, unknown>) : null;
     } catch (error) {
       if ((error as Error).message?.includes('not found')) {
         throw new StreamNotFoundError(streamId, error as Error);
@@ -487,7 +488,7 @@ export class StellarService {
     try {
       // Create a simulation request
       const account = await this.rpcServer.getAccount(contractId);
-      const sourceAccount = new TransactionBuilder.Account(account.accountId, account.sequence);
+      const sourceAccount = new Account(account.id, account.sequence);
 
       const tx = new TransactionBuilder(sourceAccount, {
         fee: DEFAULT_BASE_FEE,

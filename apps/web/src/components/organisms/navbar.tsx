@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import logo from "../public/logo.png";
 import Image from "next/image";
 import { ConnectButton } from "./connect-button";
 import { NetworkSwitcher } from "./network-switcher";
