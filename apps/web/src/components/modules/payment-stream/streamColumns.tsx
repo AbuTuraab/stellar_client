@@ -4,6 +4,8 @@ import { sliceAddress } from "@/lib/utils";
 import { format } from "date-fns";
 import { ColumnDef } from "@tanstack/react-table";
 import { StreamRecord } from "@/lib/validations";
+import StreamProgressBar from "./StreamProgressBar";
+import StreamCountdown from "./StreamCountdown";
 
 const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -66,6 +68,25 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
         },
     },
     {
+        id: "progress",
+        header: () => <div className="text-center">Progress</div>,
+        cell: ({ row }) => {
+            const stream = row.original;
+            return (
+                <div className="min-w-[150px]">
+                    <StreamProgressBar
+                        startTime={stream.startTime}
+                        endTime={stream.endTime}
+                        totalAmount={stream.totalAmount}
+                        withdrawnAmount={stream.withdrawnAmount}
+                        status={stream.status}
+                        tokenSymbol={stream.tokenSymbol}
+                    />
+                </div>
+            );
+        },
+    },
+    {
         accessorKey: "startTime",
         header: () => <div className="text-center">Start Date</div>,
         cell: ({ row }) => {
@@ -81,18 +102,14 @@ export const streamColumns: ColumnDef<StreamRecord>[] = [
         header: () => <div className="text-center">End Date</div>,
         cell: ({ row }) => {
             const endTime = row.getValue("endTime") as number;
+            const status = row.original.status;
             const formattedDate = format(new Date(endTime), "MMM dd, yyyy HH:mm");
             return (
-                <div className="text-white font-mono text-center text-xs">{formattedDate}</div>
+                <div className="flex flex-col items-center space-y-1">
+                    <div className="text-white font-mono text-center text-xs">{formattedDate}</div>
+                    <StreamCountdown endTime={endTime} status={status} />
+                </div>
             );
-        },
-    },
-    {
-        accessorKey: "tokenSymbol",
-        header: () => <div className="text-center">Token</div>,
-        cell: ({ row }) => {
-            const token = row.getValue("tokenSymbol") as string;
-            return <div className="text-white text-center">{token}</div>;
         },
     },
     {
