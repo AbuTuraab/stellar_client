@@ -42,7 +42,7 @@ All deployments are automatically saved in `deployments`:
 After deployment, verify your contracts details:
 ```bash
 # View deployment record
-cat deployments/testnet/latest.json
+cat deployments/testnet.json
 ```
 
 
